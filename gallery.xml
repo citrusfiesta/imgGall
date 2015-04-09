@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<GALLERY COLUMNS="7" XPOSITION="30" YPOSITION="30" WIDTH="100" HEIGHT="100">
+<IMAGE FULL="images/image1.jpg" THUMB="images/thumbs/thumb1.jpg" />
+<IMAGE FULL="images/image2.jpg" THUMB="images/thumbs/thumb2.jpg" />
+<IMAGE FULL="images/image3.jpg" THUMB="images/thumbs/thumb3.jpg" />
+<IMAGE FULL="images/image4.jpg" THUMB="images/thumbs/thumb4.jpg" />
+<IMAGE FULL="images/image5.jpg" THUMB="images/thumbs/thumb5.jpg" />
+<IMAGE FULL="images/image6.jpg" THUMB="images/thumbs/thumb6.jpg" />
+<IMAGE FULL="images/image7.jpg" THUMB="images/thumbs/thumb7.jpg" />
+<IMAGE FULL="images/image8.jpg" THUMB="images/thumbs/thumb8.jpg" />
+<IMAGE FULL="images/image9.jpg" THUMB="images/thumbs/thumb9.jpg" />
+<IMAGE FULL="images/image10.jpg" THUMB="images/thumbs/thumb10.jpg" />
+<IMAGE FULL="images/image11.jpg" THUMB="images/thumbs/thumb11.jpg" />
+<IMAGE FULL="images/image12.jpg" THUMB="images/thumbs/thumb12.jpg" />
+<IMAGE FULL="images/image13.jpg" THUMB="images/thumbs/thumb13.jpg" />
+<IMAGE FULL="images/image14.jpg" THUMB="images/thumbs/thumb14.jpg" />
+</GALLERY>
