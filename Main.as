@@ -118,7 +118,7 @@
 			// Next two lines not necessary. Picture is same size as stage, x and y as 0 is ok
 			//fullLoader.x = (stage.stageWidth - fullLoader.width) / 2;
 			//fullLoader.y = (stage.stageHeight - fullLoader.height) / 2;
-			fullLoader.y = stage.stageHeight;
+			fullLoader.visible = false;
 			fullLoader.addEventListener(MouseEvent.CLICK, removeFull);
 			fullLoader.contentLoaderInfo.removeEventListener(Event.INIT, fullLoaded);
 		}
@@ -131,7 +131,7 @@
 			animateGridIn();
 		}
 
-		// Starts the animating of the tweens. Call with setTimeout.
+		// Main animating function. Animates one object. Call with setTimeout.
 		function animateTween():void {
 			// If any objects were invisible, now they can be made visible again.
 			arguments[0].visible = true;
@@ -140,15 +140,21 @@
 		}
 
 		function animateGridOut(loader:Loader):void {
-			delay = 0;
+			// Shuffle the array so that the thumbs are animated in in a random order
 			thumbArray = shuffleArray(thumbArray);
+			// Reset the delay
+			delay = 0;
+			// Call the animations for all the thumbs
 			for (var i:int = 0, n:int = thumbArray.length; i < n; i++) {
-
+				// Start the animation after a set amount of time
 				setTimeout (animateTween, delay, thumbArray[i], "y", Back.easeIn,
 					thumbArray[i].y, stage.stageHeight, 0.4, true);
-
+				// Increment that set amount of time for the next thumb in the array
 				delay += delayIncrement;
 			}
+			//temp. This should be called in a nicer, abstracter, less hard coded way.
+			//Event listener for tween finished on the final tween?
+			//Then the argument for this function also isn't needed.
 			delay += 400;
 			setTimeout (animateTween, delay, loader, "y", Back.easeOut,
 				loader.y - stage.stageHeight, loader.y, 0.4, true);
