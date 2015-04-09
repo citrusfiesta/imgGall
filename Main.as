@@ -5,19 +5,26 @@
 	import flash.net.URLRequest;
 	import flash.events.Event;
 	import flash.display.Loader;
+	import fl.transitions.Tween;
+	import fl.transitions.easing.*;
+	import fl.transitions.TweenEvent;
 
 	public class Main extends MovieClip {
 
 		var thumbArray:Array = new Array();
 
 
-		var comlumns:int;
-		var xOrigin:int;
-		var yOrigin:int;
+		var columns:int;
+		var xStart:int;
+		var yStart:int;
+		var xSpacing:int;
+		var ySpacing:int;
 		var thumbWidth:int;
 		var thumbHeight:int;
 		var xmlImgList:XMLList;
 		var totalImages:int;
+		var xCounter:int;
+		var yCounter:int;
 
 		var xmlLoader:URLLoader = new URLLoader();
 
@@ -30,9 +37,11 @@
 
 			var loadedXML:XML = new XML(e.target.data);
 
-			comlumns = loadedXML.@COLUMNS;
-			xOrigin = loadedXML.@XPOSITION;
-			yOrigin = loadedXML.@YPOSITION;
+			columns = loadedXML.@COLUMNS;
+			xStart = loadedXML.@XSTART;
+			yStart = loadedXML.@YSTART;
+			xSpacing = loadedXML.@XSPACING;
+			ySpacing = loadedXML.@YSPACING;
 			thumbWidth = loadedXML.@WIDTH;
 			thumbHeight = loadedXML.@HEIGHT;
 			xmlImgList = loadedXML.IMAGE;
@@ -42,13 +51,18 @@
 		}
 
 		function loadThumbs():void {
-
 			for (var i:int = 0; i < totalImages; i++) {
 				var thumbLoader:Loader = new Loader();
 				thumbLoader.load(new URLRequest(xmlImgList[i].@THUMB));
 
 				thumbLoader.contentLoaderInfo.addEventListener(Event.COMPLETE, thumbLoaded);
-				thumbLoader.x = thumbWidth * i;
+				thumbLoader.x = xStart + (thumbWidth + xSpacing) * xCounter;
+				thumbLoader.y = yStart + (thumbHeight + ySpacing) * yCounter;
+				
+				if (++xCounter >= columns) {
+					xCounter = 0;
+					yCounter++;
+				}
 			}
 		}
 
@@ -56,6 +70,8 @@
 			var thumbLoader:Loader = Loader(e.target.loader);
 			thumbArray.push(thumbLoader);
 			this.addChild(thumbLoader);
+			var tween:Tween = new Tween (thumbLoader, "y", Back.easeOut, thumbLoader.y + stage.stageHeight,
+				thumbLoader.y, 0.5, true);
 		}
 	}
 }
