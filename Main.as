@@ -38,14 +38,49 @@
 		var container:MovieClip;
 
 		var nl:Boolean = true;
+		var btnLoader:URLLoader;
+		var prevBtn:Loader;
+		var nextBtn:Loader;
+		var menuBtn:Loader;
 
 		// Used to pass paramaters to an event listener
-		var functionLastThumbAnimatedAway:Function;
+		var functionPassParamsToEvent:Function;
 
 		public function Main() {
 			xmlLoader = new URLLoader();
 			xmlLoader.load(new URLRequest("gallery.xml"));
 			xmlLoader.addEventListener(Event.COMPLETE, processXML);
+
+			btnLoader = new URLLoader();
+			btnLoader.load(new URLRequest("buttons.xml"));
+			btnLoader.addEventListener(Event.COMPLETE, processNav);
+		}
+
+		// Loading in the buttons
+		function processNav(e:Event):void {
+
+			var loadedXML:XML = new XML(e.target.data);
+
+			prevBtn = new Loader();
+			prevBtn.load(new URLRequest(loadedXML.PREV.@LOCATION));
+			this.addChild(prevBtn);
+
+			nextBtn = new Loader();
+			nextBtn.load(new URLRequest(loadedXML.NEXT.@LOCATION));
+			this.addChild(nextBtn);
+
+			menuBtn = new Loader();
+			menuBtn.load(new URLRequest(loadedXML.MENU.@LOCATION));
+			this.addChild(menuBtn);
+
+			btnLoader.removeEventListener(Event.COMPLETE, processNav);
+
+
+			menuBtn.addEventListener(MouseEvent.CLICK, testClick);//temp. for testing purposes
+		}
+
+		function testClick(e:MouseEvent):void {//temp. for testing purposes
+			trace("clicked");
 		}
 
 		// Gets values from the XML file and starts loading the thumbs
@@ -172,7 +207,7 @@
 					loader.y - stage.stageHeight, loader.y, tweenDuration, true);
 
 				// Remove the event listener
-				e.currentTarget.removeEventListener(TweenEvent.MOTION_FINISH, functionLastThumbAnimatedAway);
+				e.currentTarget.removeEventListener(TweenEvent.MOTION_FINISH, functionPassParamsToEvent);
 			};
 		}
 
@@ -184,9 +219,9 @@
 				arguments[5], arguments[6]);
 			// If the loader of the full image is passed, start the animating in of it
 			if (arguments[7] != null) {
-				functionLastThumbAnimatedAway = lastThumbAnimatedAway(arguments[7]);
+				functionPassParamsToEvent = lastThumbAnimatedAway(arguments[7]);
 				// Add image listener so we can wait for the last thumb to animate away
-				tween.addEventListener(TweenEvent.MOTION_FINISH, functionLastThumbAnimatedAway);
+				tween.addEventListener(TweenEvent.MOTION_FINISH, functionPassParamsToEvent);
 			}
 		}
 
