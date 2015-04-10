@@ -194,16 +194,18 @@
 					fullLoader.y, fullLoader.y - stage.stageHeight, tweenDuration, true);
 			// Before the animating away starts, remove the buttons
 			functionPassParamsToEvent = showHideButtons(false);
-			tween.addEventListener(TweenEvent.MOTION_FINISH, functionPassParamsToEvent);
+			tween.addEventListener(TweenEvent.MOTION_START, functionPassParamsToEvent);
+			// Need this to call the tween event in the previous line
+			tween.start();
 			// Once the tween is complete, continue with the rest of the animation
 			tween.addEventListener(TweenEvent.MOTION_FINISH, fullImgAnimatedAway);
 		}
 
 		// Shows or hides the buttons based on provided paramater.
-		function showHideButtons(show:Boolean):Function {
+		function showHideButtons(showButtons:Boolean):Function {
 
 			return function(e:TweenEvent):void {
-				if (show) {
+				if (showButtons) {
 					// Check if the buttons are on the stage. If not, add them.
 					if (!nextBtn.stage) {
 						addChild(nextBtn);
@@ -234,8 +236,11 @@
 						removeChild(prevBtn);
 					}
 				}
-				// Remove event listener
-				e.currentTarget.removeEventListener(TweenEvent.MOTION_FINISH, functionPassParamsToEvent);
+				// Remove event listeners
+				if (e.currentTarget.hasEventListener(TweenEvent.MOTION_FINISH))
+					e.currentTarget.removeEventListener(TweenEvent.MOTION_FINISH, functionPassParamsToEvent);
+				else if (e.currentTarget.hasEventListener(TweenEvent.MOTION_START))
+					e.currentTarget.removeEventListener(TweenEvent.MOTION_START, functionPassParamsToEvent);
 			};
 		}
 
