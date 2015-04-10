@@ -43,6 +43,9 @@
 		var nextBtn:Loader;
 		var menuBtn:Loader;
 
+		// Global reference to the full screen image
+		var fullLoader:Loader;
+
 		// Used to pass paramaters to an event listener
 		var functionPassParamsToEvent:Function;
 
@@ -63,24 +66,15 @@
 
 			prevBtn = new Loader();
 			prevBtn.load(new URLRequest(loadedXML.PREV.@LOCATION));
-			this.addChild(prevBtn);
 
 			nextBtn = new Loader();
 			nextBtn.load(new URLRequest(loadedXML.NEXT.@LOCATION));
-			this.addChild(nextBtn);
 
 			menuBtn = new Loader();
 			menuBtn.load(new URLRequest(loadedXML.MENU.@LOCATION));
-			this.addChild(menuBtn);
 
+			// Remove the event listener
 			btnLoader.removeEventListener(Event.COMPLETE, processNav);
-
-
-			menuBtn.addEventListener(MouseEvent.CLICK, testClick);//temp. for testing purposes
-		}
-
-		function testClick(e:MouseEvent):void {//temp. for testing purposes
-			trace("clicked");
 		}
 
 		// Gets values from the XML file and starts loading the thumbs
@@ -152,12 +146,14 @@
 		}
 
 		function callFull(e:MouseEvent):void {
-			var fullLoader:Loader = new Loader();
+			fullLoader = new Loader();
 			var fullURL;
+			//Depending on which language we're using, load in the corresponding image
 			if (nl)
 				fullURL = xmlImgList[e.target.name].@FULL_NL;
 			else
 				fullURL = xmlImgList[e.target.name].@FULL_ENG;
+
 			fullLoader.load(new URLRequest(fullURL));
 			animateGridOut(fullLoader);
 			fullLoader.contentLoaderInfo.addEventListener(Event.INIT, fullLoaded);
@@ -166,22 +162,63 @@
 		}
 
 		function fullLoaded (e:Event):void {
-			var fullLoader:Loader = Loader(e.target.loader);
+			fullLoader = Loader(e.target.loader);
 			addChild(fullLoader);
 			// Keep the loader invisible until all the thumbs are animated away
 			fullLoader.visible = false;
-			fullLoader.addEventListener(MouseEvent.CLICK, removeFull);
 			fullLoader.contentLoaderInfo.removeEventListener(Event.INIT, fullLoaded);
 		}
 
 		function removeFull(e:MouseEvent):void {
-			// Get the reference to the loader that was clicked on
-			var loader:Loader = Loader (e.currentTarget);
+			// Debugging: Call this only after the grid is loaded
 			container.addEventListener(MouseEvent.CLICK, callFull);
-			var tween:Tween = new Tween(loader, "y", Back.easeIn,
-					loader.y, loader.y - stage.stageHeight, tweenDuration, true);
+			var tween:Tween = new Tween(fullLoader, "y", Back.easeIn,
+					fullLoader.y, fullLoader.y - stage.stageHeight, tweenDuration, true);
+			// Before the animating away starts, remove the buttons
+			functionPassParamsToEvent = showHideButtons(false);
+			tween.addEventListener(TweenEvent.MOTION_FINISH, functionPassParamsToEvent);
 			// Once the tween is complete, continue with the rest of the animation
 			tween.addEventListener(TweenEvent.MOTION_FINISH, fullImgAnimatedAway);
+		}
+
+		// Shows or hides the buttons based on provided paramater.
+		function showHideButtons(show:Boolean):Function {
+
+			return function(e:TweenEvent):void {
+				if (show) {
+					// Check if the buttons are on the stage. If not, add them.
+					if (!nextBtn.stage) {
+						addChild(nextBtn);
+						nextBtn.x = stage.stageWidth - nextBtn.width;
+						nextBtn.y = stage.stageHeight - nextBtn.height;
+					}
+					if (!menuBtn.stage) {
+						addChild(menuBtn);
+						menuBtn.x = nextBtn.x - menuBtn.width;
+						menuBtn.y = nextBtn.y;
+						menuBtn.addEventListener(MouseEvent.CLICK, removeFull);
+					}
+					if (!prevBtn.stage) {
+						addChild(prevBtn);
+						prevBtn.x = menuBtn.x - prevBtn.width;
+						prevBtn.y = nextBtn.y;
+					}
+				} else {
+					// Check if the buttons are on the stage. If so, remove them.
+					if (nextBtn.stage) {
+						removeChild(nextBtn);
+					}
+					if (menuBtn.stage) {
+						menuBtn.removeEventListener(MouseEvent.CLICK, removeFull);
+						removeChild(menuBtn);
+					}
+					if (prevBtn.stage){
+						removeChild(prevBtn);
+					}
+				}
+				// Remove event listener
+				e.currentTarget.removeEventListener(TweenEvent.MOTION_FINISH, functionPassParamsToEvent);
+			};
 		}
 
 		function fullImgAnimatedAway(e:TweenEvent):void {
@@ -205,7 +242,9 @@
 				loader.visible = true;
 				var tween:Tween = new Tween (loader, "y", Back.easeOut,
 					loader.y - stage.stageHeight, loader.y, tweenDuration, true);
-
+				// After the animating in is done, add the buttons
+				functionPassParamsToEvent = showHideButtons(true);
+				tween.addEventListener(TweenEvent.MOTION_FINISH, functionPassParamsToEvent);
 				// Remove the event listener
 				e.currentTarget.removeEventListener(TweenEvent.MOTION_FINISH, functionPassParamsToEvent);
 			};
@@ -220,7 +259,7 @@
 			// If the loader of the full image is passed, start the animating in of it
 			if (arguments[7] != null) {
 				functionPassParamsToEvent = lastThumbAnimatedAway(arguments[7]);
-				// Add image listener so we can wait for the last thumb to animate away
+				// Add image listener so we can wait for the last thumb to animate 	away
 				tween.addEventListener(TweenEvent.MOTION_FINISH, functionPassParamsToEvent);
 			}
 		}
