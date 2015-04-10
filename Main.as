@@ -37,6 +37,8 @@
 		// Holds the thumbs. Without this, this code doesn't work
 		var container:MovieClip;
 
+		var nl:Boolean = true;
+
 		// Used to pass paramaters to an event listener
 		var functionLastThumbAnimatedAway:Function;
 
@@ -116,7 +118,11 @@
 
 		function callFull(e:MouseEvent):void {
 			var fullLoader:Loader = new Loader();
-			var fullURL = xmlImgList[e.target.name].@FULL;
+			var fullURL;
+			if (nl)
+				fullURL = xmlImgList[e.target.name].@FULL_NL;
+			else
+				fullURL = xmlImgList[e.target.name].@FULL_ENG;
 			fullLoader.load(new URLRequest(fullURL));
 			animateGridOut(fullLoader);
 			fullLoader.contentLoaderInfo.addEventListener(Event.INIT, fullLoaded);
