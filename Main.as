@@ -13,38 +13,50 @@
 	import flash.utils.*;
 
 	public class Main extends MovieClip {
-
+		// Global reference to all the thumbnails
 		var thumbArray:Array = new Array();
+		// Global reference to the current full screen image
+		var fullLoader:Loader;
 
+		// Holds the thumbs. Without this, this code doesn't work
+		var thumbContainer:MovieClip;
+
+		// delay is used time the animations one after the other
 		var delay:int = 0;
+		// The difference in delay between the start of the animations
 		var delayIncrement:int = 34;
-
+		// How long the tweens last
 		var tweenDuration:Number = 0.4;
 
-		var columns:int;
-		var xStart:int;
-		var yStart:int;
-		var xSpacing:int;
-		var ySpacing:int;
-		var thumbWidth:int;
-		var thumbHeight:int;
-		var xmlImgList:XMLList;
-		var totalImages:int;
-		var columnCounter:int;
-		var rowCounter:int;
-
+		// Loads in the gallery XML file
 		var xmlLoader:URLLoader;
-		// Holds the thumbs. Without this, this code doesn't work
-		var container:MovieClip;
+		// How many columns the grid of thumbs has. Set in the xml-file
+		var columns:int;
+		// The horizontal starting position of the grid. Set in the xml-file
+		var xStart:int;
+		// The vertical starting position of the grid. Set in the xml-file
+		var yStart:int;
+		// The horizontal spacing between the thumbs. Set in the xml-file
+		var xSpacing:int;
+		// The vertical spacing between the thumbs. Set in the xml-file
+		var ySpacing:int;
+		// Self-explanatory. Set in the xml-file
+		var thumbWidth:int;
+		// Self-explanatory. Set in the xml-file
+		var thumbHeight:int;
+		// The list of objects with IMAGE tags in the XML file. Used to load the thumbs
+		var xmlImgList:XMLList;
 
+		// Boolean that handles which images are loaded in (with English or Dutch descriptions)
 		var nl:Boolean = true;
+		// Loads in the buttons xml-file
 		var btnLoader:URLLoader;
+		// Global reference to the prev button
 		var prevBtn:Loader;
+		// Global reference to the next button
 		var nextBtn:Loader;
+		// Global reference to the menu button
 		var menuBtn:Loader;
-
-		// Global reference to the full screen image
-		var fullLoader:Loader;
 
 		// Used to pass paramaters to an event listener
 		var functionPassParamsToEvent:Function;
@@ -82,6 +94,7 @@
 
 			var loadedXML:XML = new XML(e.target.data);
 
+			// Assign all the variables for the thumbs
 			columns = loadedXML.@COLUMNS;
 			xStart = loadedXML.@XSTART;
 			yStart = loadedXML.@YSTART;
@@ -90,7 +103,6 @@
 			thumbWidth = loadedXML.@WIDTH;
 			thumbHeight = loadedXML.@HEIGHT;
 			xmlImgList = loadedXML.IMAGE;
-			totalImages = xmlImgList.length();
 
 			createContainer();
 			loadThumbs();
@@ -99,18 +111,19 @@
 			xmlLoader.removeEventListener(Event.COMPLETE, processXML);
 		}
 
+		// Create the movie clip container that holds the thumbs
 		function createContainer():void {
-			container = new MovieClip();
-			container.x = xStart;
-			container.y = yStart;
-			this.addChild(container);
+			thumbContainer = new MovieClip();
+			thumbContainer.x = xStart;
+			thumbContainer.y = yStart;
+			this.addChild(thumbContainer);
 
-			container.addEventListener(MouseEvent.CLICK, callFull);
+			thumbContainer.addEventListener(MouseEvent.CLICK, callFull);
 		}
 
 		// Loads thumbs from the XML file
 		function loadThumbs():void {
-			for (var i:int = 0; i < totalImages; i++) {
+			for (var i:int = 0, n:int = xmlImgList.length(); i < n; i++) {
 				var thumbLoader:Loader = new Loader();
 				var thumbURL = xmlImgList[i].@THUMB;
 				thumbLoader.load(new URLRequest(thumbURL));
@@ -141,10 +154,11 @@
 		// After thumb is loaded, add it to the stage and remove its event listener
 		function thumbLoaded(e:Event):void {
 			var thumbLoader:Loader = Loader(e.target.loader);
-			container.addChild(thumbLoader);
+			thumbContainer.addChild(thumbLoader);
 			thumbLoader.contentLoaderInfo.removeEventListener(Event.COMPLETE, thumbLoaded);
 		}
 
+		// Loads the full image and calls its animation
 		function callFull(e:MouseEvent):void {
 			fullLoader = new Loader();
 			var fullURL;
@@ -153,14 +167,17 @@
 				fullURL = xmlImgList[e.target.name].@FULL_NL;
 			else
 				fullURL = xmlImgList[e.target.name].@FULL_ENG;
-
 			fullLoader.load(new URLRequest(fullURL));
+			// Start animating the grid away
 			animateGridOut(fullLoader);
 			fullLoader.contentLoaderInfo.addEventListener(Event.INIT, fullLoaded);
 
-			container.removeEventListener(MouseEvent.CLICK, callFull);
+			thumbContainer.removeEventListener(MouseEvent.CLICK, callFull);
 		}
 
+		// Once the full image is loaded it is added to the stage but set to invisible.
+		// This is while the thumbs are animated away. The last thumb that is tweened
+		// will call the animation to tween in the full image.
 		function fullLoaded (e:Event):void {
 			fullLoader = Loader(e.target.loader);
 			addChild(fullLoader);
@@ -169,9 +186,10 @@
 			fullLoader.contentLoaderInfo.removeEventListener(Event.INIT, fullLoaded);
 		}
 
+		// Tweens the full image away to the top, removes the buttons from the stage.
 		function removeFull(e:MouseEvent):void {
 			// Debugging: Call this only after the grid is loaded
-			container.addEventListener(MouseEvent.CLICK, callFull);
+			thumbContainer.addEventListener(MouseEvent.CLICK, callFull);
 			var tween:Tween = new Tween(fullLoader, "y", Back.easeIn,
 					fullLoader.y, fullLoader.y - stage.stageHeight, tweenDuration, true);
 			// Before the animating away starts, remove the buttons
@@ -221,6 +239,8 @@
 			};
 		}
 
+		// Once the full image is tweened away it can be unloaded and removed from the stage.
+		// The thumb grid is then animated in.
 		function fullImgAnimatedAway(e:TweenEvent):void {
 			// Get the loader that was animated by getting the event's current target (the tween)
 			// and its reference to the object that is being tweened (the loader)
@@ -264,6 +284,7 @@
 			}
 		}
 
+		// Tweens the thumbs away to the bottom and tweens the full image in form the top
 		function animateGridOut(loader:Loader):void {
 			// Shuffle the array so that the thumbs are animated in in a random order
 			var tempArray = shuffleArray(thumbArray);
@@ -286,9 +307,10 @@
 
 		// Tweens the thumbs into place from below the bottom of the screen, one after the other
 		function animateGridIn():void {
-			// Set the counters to 0 so that the thumbs will be spawned at the correct positions
-			columnCounter = 0;
-			rowCounter = 0;
+			// Aids in the horizontal placement of the thumbs
+			var columnCounter:int = 0;
+			// Aids in the vertical placement of the thumbs
+			var rowCounter:int = 0;
 
 			// Give each thumb their final positions for after the animation is done
 			for (var i:int = 0, n:int = thumbArray.length; i < n; i++) {
@@ -312,7 +334,7 @@
 					stage.stageHeight, tempArray[i].y, tweenDuration, true);
 				// Increment that set amount of time for the next thumb in the array
 				delay += delayIncrement;
-				// Make the thumbs invisible because they are already in final position
+				// Make the thumbs invisible because they are already in their final position
 				tempArray[i].visible = false;
 			}
 		}
