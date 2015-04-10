@@ -85,12 +85,18 @@
 			animateGridIn();
 		}
 
+		// Returns a new randomized array based on the array passed in.
 		function shuffleArray(pArray:Array):Array {
+			// Make a copy of the original array;
+			var startArray:Array = pArray.concat();
 			var resultArray:Array = new Array();
+
 			var randPos:int;
-			for (var i:int = 0, n:int = pArray.length; i < n; i++) {
-				randPos = int(Math.random() * pArray.length);
-				resultArray.push(pArray.splice(randPos, 1)[0]);
+			for (var i:int = 0, n:int = startArray.length; i < n; i++) {
+				// Get a random index from the startArray
+				randPos = int(Math.random() * startArray.length);
+				// Remove the element at that index and it to the end of the new array
+				resultArray.push(startArray.splice(randPos, 1)[0]);
 			}
 			return resultArray;
 		}
@@ -141,14 +147,14 @@
 
 		function animateGridOut(loader:Loader):void {
 			// Shuffle the array so that the thumbs are animated in in a random order
-			thumbArray = shuffleArray(thumbArray);
+			var tempArray = shuffleArray(thumbArray);
 			// Reset the delay
 			delay = 0;
 			// Call the animations for all the thumbs
-			for (var i:int = 0, n:int = thumbArray.length; i < n; i++) {
+			for (var i:int = 0, n:int = tempArray.length; i < n; i++) {
 				// Start the animation after a set amount of time
-				setTimeout (animateTween, delay, thumbArray[i], "y", Back.easeIn,
-					thumbArray[i].y, stage.stageHeight, 0.4, true);
+				setTimeout (animateTween, delay, tempArray[i], "y", Back.easeIn,
+					tempArray[i].y, stage.stageHeight, 0.4, true);
 				// Increment that set amount of time for the next thumb in the array
 				delay += delayIncrement;
 			}
@@ -165,10 +171,9 @@
 			// Set the counters to 0 so that the thumbs will be spawned at the correct positions
 			columnCounter = 0;
 			rowCounter = 0;
-			// Shuffle the thumbs around so they are random each time
-			thumbArray = shuffleArray(thumbArray);
+
 			// Give each thumb their final positions for after the animation is done
-			for (var i:int = 0; i < totalImages; i++) {
+			for (var i:int = 0, n:int = thumbArray.length; i < n; i++) {
 
 				thumbArray[i].x = xStart + (thumbWidth + xSpacing) * columnCounter;
 				thumbArray[i].y = yStart + (thumbHeight + ySpacing) * rowCounter;
@@ -178,19 +183,19 @@
 					rowCounter++;
 				}
 			}
-			// Shuffle the array again so that the thumbs are animated in in a random order
-			thumbArray = shuffleArray(thumbArray);
+			// Shuffle the array so that the thumbs are animated in in a random order
+			var tempArray = shuffleArray(thumbArray);
 			// Reset the delay
 			delay = 0;
 			// Call the animations for all the thumbs
-			for (i = 0; i < totalImages; i++) {
+			for (i = 0; i < n; i++) {
 				// Start the animation after a set amount of time
-				setTimeout (animateTween, delay, thumbArray[i], "y", Back.easeOut,
-					stage.stageHeight, thumbArray[i].y, 0.4, true);
+				setTimeout (animateTween, delay, tempArray[i], "y", Back.easeOut,
+					stage.stageHeight, tempArray[i].y, 0.4, true);
 				// Increment that set amount of time for the next thumb in the array
 				delay += delayIncrement;
 				// Make the thumbs invisible because they are already in final position
-				thumbArray[i].visible = false;
+				tempArray[i].visible = false;
 			}
 		}
 
