@@ -7,6 +7,7 @@
 	import flash.events.MouseEvent;
 	import flash.display.Loader;
 	import fl.transitions.Tween;
+	import fl.transitions.TweenEvent;
 	import fl.transitions.easing.*;
 	import fl.transitions.TweenEvent;
 	import flash.utils.*;
@@ -17,6 +18,8 @@
 
 		var delay:int = 0;
 		var delayIncrement:int = 34;
+
+		var tweenDuration:Number = 0.4;
 
 		var columns:int;
 		var xStart:int;
@@ -33,6 +36,9 @@
 		var xmlLoader:URLLoader;
 		// Holds the thumbs. Without this, this code doesn't work
 		var container:MovieClip;
+
+		// Used to pass paramaters to an event listener
+		var functionLastThumbAnimatedAway:Function;
 
 		public function Main() {
 			xmlLoader = new URLLoader();
@@ -121,20 +127,47 @@
 		function fullLoaded (e:Event):void {
 			var fullLoader:Loader = Loader(e.target.loader);
 			addChild(fullLoader);
-			// Next two lines not necessary. Picture is same size as stage, x and y as 0 is ok
-			//fullLoader.x = (stage.stageWidth - fullLoader.width) / 2;
-			//fullLoader.y = (stage.stageHeight - fullLoader.height) / 2;
+			// Keep the loader invisible until all the thumbs are animated away
 			fullLoader.visible = false;
 			fullLoader.addEventListener(MouseEvent.CLICK, removeFull);
 			fullLoader.contentLoaderInfo.removeEventListener(Event.INIT, fullLoaded);
 		}
 
 		function removeFull(e:MouseEvent):void {
+			// Get the reference to the loader that was clicked on
 			var loader:Loader = Loader (e.currentTarget);
+			container.addEventListener(MouseEvent.CLICK, callFull);
+			var tween:Tween = new Tween(loader, "y", Back.easeIn,
+					loader.y, loader.y - stage.stageHeight, tweenDuration, true);
+			// Once the tween is complete, continue with the rest of the animation
+			tween.addEventListener(TweenEvent.MOTION_FINISH, fullImgAnimatedAway);
+		}
+
+		function fullImgAnimatedAway(e:TweenEvent):void {
+			// Get the loader that was animated by getting the event's current target (the tween)
+			// and its reference to the object that is being tweened (the loader)
+			var loader:Loader = Loader (e.currentTarget.obj);
+			// Unload the loader and remove it from the stage
 			loader.unload();
 			this.removeChild(loader);
-			container.addEventListener(MouseEvent.CLICK, callFull);
+			// Remove the event listener
+			e.currentTarget.removeEventListener(TweenEvent.MOTION_FINISH, fullImgAnimatedAway);
+			// Call the animation of the grid.
 			animateGridIn();
+		}
+
+		// This function is built this way so that it can get extra parameters as an event listener
+		function lastThumbAnimatedAway(loader:Loader):Function {
+
+			return function(e:TweenEvent):void {
+				// Set loader to visible
+				loader.visible = true;
+				var tween:Tween = new Tween (loader, "y", Back.easeOut,
+					loader.y - stage.stageHeight, loader.y, tweenDuration, true);
+
+				// Remove the event listener
+				e.currentTarget.removeEventListener(TweenEvent.MOTION_FINISH, functionLastThumbAnimatedAway);
+			};
 		}
 
 		// Main animating function. Animates one object. Call with setTimeout.
@@ -143,6 +176,12 @@
 			arguments[0].visible = true;
 			var tween = new Tween (arguments[0], arguments[1], arguments[2], arguments[3], arguments[4],
 				arguments[5], arguments[6]);
+			// If the loader of the full image is passed, start the animating in of it
+			if (arguments[7] != null) {
+				functionLastThumbAnimatedAway = lastThumbAnimatedAway(arguments[7]);
+				// Add image listener so we can wait for the last thumb to animate away
+				tween.addEventListener(TweenEvent.MOTION_FINISH, functionLastThumbAnimatedAway);
+			}
 		}
 
 		function animateGridOut(loader:Loader):void {
@@ -152,18 +191,17 @@
 			delay = 0;
 			// Call the animations for all the thumbs
 			for (var i:int = 0, n:int = tempArray.length; i < n; i++) {
-				// Start the animation after a set amount of time
-				setTimeout (animateTween, delay, tempArray[i], "y", Back.easeIn,
-					tempArray[i].y, stage.stageHeight, 0.4, true);
+				if (i + 1 != n)
+					// Start the animation after a set amount of time
+					setTimeout (animateTween, delay, tempArray[i], "y", Back.easeIn,
+						tempArray[i].y, stage.stageHeight, tweenDuration, true);
+				// If it's the last thumb to be animated pass in full image loader so it can animating in
+				else
+					setTimeout (animateTween, delay, tempArray[i], "y", Back.easeIn,
+						tempArray[i].y, stage.stageHeight, tweenDuration, true, loader);
 				// Increment that set amount of time for the next thumb in the array
 				delay += delayIncrement;
 			}
-			//temp. This should be called in a nicer, abstracter, less hard coded way.
-			//Event listener for tween finished on the final tween?
-			//Then the argument for this function also isn't needed.
-			delay += 400;
-			setTimeout (animateTween, delay, loader, "y", Back.easeOut,
-				loader.y - stage.stageHeight, loader.y, 0.4, true);
 		}
 
 		// Tweens the thumbs into place from below the bottom of the screen, one after the other
@@ -191,13 +229,12 @@
 			for (i = 0; i < n; i++) {
 				// Start the animation after a set amount of time
 				setTimeout (animateTween, delay, tempArray[i], "y", Back.easeOut,
-					stage.stageHeight, tempArray[i].y, 0.4, true);
+					stage.stageHeight, tempArray[i].y, tweenDuration, true);
 				// Increment that set amount of time for the next thumb in the array
 				delay += delayIncrement;
 				// Make the thumbs invisible because they are already in final position
 				tempArray[i].visible = false;
 			}
 		}
-
 	}
 }
