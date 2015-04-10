@@ -271,16 +271,16 @@
 		}
 
 		// Main animating function. Animates one object. Call with setTimeout.
+		//
 		function animateTween():void {
 			// If any objects were invisible, now they can be made visible again.
 			arguments[0].visible = true;
 			var tween = new Tween (arguments[0], arguments[1], arguments[2], arguments[3], arguments[4],
 				arguments[5], arguments[6]);
-			// If the loader of the full image is passed, start the animating in of it
+			// If a functionPassParamsToEvent was passed, call it once the tween is done
 			if (arguments[7] != null) {
-				functionPassParamsToEvent = lastThumbAnimatedAway(arguments[7]);
-				// Add image listener so we can wait for the last thumb to animate 	away
-				tween.addEventListener(TweenEvent.MOTION_FINISH, functionPassParamsToEvent);
+				// Add image listener so we can wait for the last thumb to animate away
+				tween.addEventListener(TweenEvent.MOTION_FINISH, arguments[7]);
 			}
 		}
 
@@ -292,14 +292,17 @@
 			delay = 0;
 			// Call the animations for all the thumbs
 			for (var i:int = 0, n:int = tempArray.length; i < n; i++) {
-				if (i + 1 != n)
+				if (i + 1 != n) {
 					// Start the animation after a set amount of time
 					setTimeout (animateTween, delay, tempArray[i], "y", Back.easeIn,
 						tempArray[i].y, stage.stageHeight, tweenDuration, true);
-				// If it's the last thumb to be animated pass in full image loader so it can animating in
-				else
+				} else {
+					// If the last tween is being called, animate in the full image afterwards
+					functionPassParamsToEvent = lastThumbAnimatedAway(loader);
 					setTimeout (animateTween, delay, tempArray[i], "y", Back.easeIn,
-						tempArray[i].y, stage.stageHeight, tweenDuration, true, loader);
+						tempArray[i].y, stage.stageHeight, tweenDuration, true,
+						functionPassParamsToEvent);
+				}
 				// Increment that set amount of time for the next thumb in the array
 				delay += delayIncrement;
 			}
