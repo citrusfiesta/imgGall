@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <BUTTONS>
-<PREV LOCATION="images/buttons/prev.png" WIDTH="224" HEIGHT="146"/>
-<NEXT LOCATION="images/buttons/next.png" WIDTH="224" HEIGHT="146"/>
-<MENU LOCATION="images/buttons/menu.png" WIDTH="226" HEIGHT="146"/>
+<PREV LOCATION="images/buttons/prev.png"/>
+<NEXT LOCATION="images/buttons/next.png"/>
+<MENU LOCATION="images/buttons/menu.png"/>
 <!-- <LANG LOCATION="images/buttons/prev.png" /> -->
 </BUTTONS>
