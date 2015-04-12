@@ -166,7 +166,7 @@
 			if (nl)
 				fullURL = xmlImgList[fullLoaderIndex].@FULL_NL;
 			else
-				fullURL = xmlImgList[fullLoaderIndex].@FULL_ENG;
+				fullURL = xmlImgList[fullLoaderIndex].@FULL_EN;
 
 			fullLoaderCache.load(new URLRequest(fullURL));
 
