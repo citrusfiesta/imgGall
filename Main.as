@@ -17,6 +17,10 @@
 		var thumbArray:Array = new Array();
 		// Global reference to the current full screen image
 		var fullLoader:Loader;
+		// Holds full image before it's supposed to be animated
+		var fullLoaderCache:Loader;
+		// Holds the index in the xml-list of the current full image. Used for scrolling trough full images
+		var fullLoaderIndex:int;
 
 		// Holds the thumbs. Without this, this code doesn't work
 		var thumbContainer:MovieClip;
@@ -117,8 +121,6 @@
 			thumbContainer.x = xStart;
 			thumbContainer.y = yStart;
 			this.addChild(thumbContainer);
-
-			thumbContainer.addEventListener(MouseEvent.CLICK, callFull);
 		}
 
 		// Loads thumbs from the XML file
@@ -129,26 +131,12 @@
 				thumbLoader.load(new URLRequest(thumbURL));
 				thumbLoader.contentLoaderInfo.addEventListener(Event.COMPLETE, thumbLoaded);
 				thumbArray.push(thumbLoader);
+				// Setting the name to the position in the list so that when the thumb is clicked
+				// we have an index to get the full image at.
 				thumbLoader.name = i.toString();
 			}
 
 			animateGridIn();
-		}
-
-		// Returns a new randomized array based on the array passed in.
-		function shuffleArray(pArray:Array):Array {
-			// Make a copy of the original array;
-			var startArray:Array = pArray.concat();
-			var resultArray:Array = new Array();
-
-			var randPos:int;
-			for (var i:int = 0, n:int = startArray.length; i < n; i++) {
-				// Get a random index from the startArray
-				randPos = int(Math.random() * startArray.length);
-				// Remove the element at that index and it to the end of the new array
-				resultArray.push(startArray.splice(randPos, 1)[0]);
-			}
-			return resultArray;
 		}
 
 		// After thumb is loaded, add it to the stage and remove its event listener
@@ -158,41 +146,88 @@
 			thumbLoader.contentLoaderInfo.removeEventListener(Event.COMPLETE, thumbLoaded);
 		}
 
-		// Loads the full image and calls its animation
+		// Loads the full image, animates the grid away, and animates the full image in
 		function callFull(e:MouseEvent):void {
-			fullLoader = new Loader();
-			var fullURL;
-			//Depending on which language we're using, load in the corresponding image
-			if (nl)
-				fullURL = xmlImgList[e.target.name].@FULL_NL;
-			else
-				fullURL = xmlImgList[e.target.name].@FULL_ENG;
-			fullLoader.load(new URLRequest(fullURL));
+			// First use the cache to reference the loader while it's not yet loaded
+			fullLoaderCache = new Loader();
+			// fullLoaderIndex is set to the index of the thumb
+			fullLoaderIndex = e.target.name;
+			loadFull();
 			// Start animating the grid away
-			animateGridOut(fullLoader);
-			fullLoader.contentLoaderInfo.addEventListener(Event.INIT, fullLoaded);
+			animateGridOut();
 
 			thumbContainer.removeEventListener(MouseEvent.CLICK, callFull);
 		}
 
-		// Once the full image is loaded it is added to the stage but set to invisible.
-		// This is while the thumbs are animated away. The last thumb that is tweened
-		// will call the animation to tween in the full image.
+		// Loads in the full image
+		function loadFull():void {
+			var fullURL;
+			//Depending on which language we're using, load in the corresponding image
+			if (nl)
+				fullURL = xmlImgList[fullLoaderIndex].@FULL_NL;
+			else
+				fullURL = xmlImgList[fullLoaderIndex].@FULL_ENG;
+
+			fullLoaderCache.load(new URLRequest(fullURL));
+
+			// Reset the position to 0,0 to be safe
+			fullLoaderCache.x = 0;
+			fullLoaderCache.y = 0;
+
+			fullLoaderCache.contentLoaderInfo.addEventListener(Event.INIT, fullLoaded);
+		}
+
+		// Once the full image is loaded, add it to fullLoader (instead of fullLoaderCache)
 		function fullLoaded (e:Event):void {
 			fullLoader = Loader(e.target.loader);
-			addChild(fullLoader);
-			// Keep the loader invisible until all the thumbs are animated away
-			fullLoader.visible = false;
-			fullLoader.contentLoaderInfo.removeEventListener(Event.INIT, fullLoaded);
+			fullLoaderCache.contentLoaderInfo.removeEventListener(Event.INIT, fullLoaded);
+		}
+
+		// Loads in the next image in the list and tweens it in place
+		function loadNext(e:TweenEvent):void {
+			// Set the fullLoaderIndex to the next image in the list. Loop back to start if necessary.
+			if (++fullLoaderIndex >= xmlImgList.length())
+				fullLoaderIndex = 0;
+			loadFull();
+			// Start animating it in
+			var tween:Tween = new Tween (fullLoader, "x", Back.easeOut,
+				fullLoader.x + stage.stageWidth, fullLoader.x, tweenDuration, true);
+			e.currentTarget.removeEventListener(TweenEvent.MOTION_FINISH, loadNext);
+		}
+
+		// Loads in the previous image in the list and tweens it in place
+		function loadPrev(e:TweenEvent):void {
+			// Set the fullLoaderIndex to the previous image in the list. Loop back to end if necessary.
+			if (--fullLoaderIndex < 0)
+				fullLoaderIndex = xmlImgList.length() - 1;
+			loadFull();
+			// Start animating it in
+			var tween:Tween = new Tween (fullLoader, "x", Back.easeOut,
+				fullLoader.x - stage.stageWidth, fullLoader.x, tweenDuration, true);
+			e.currentTarget.removeEventListener(TweenEvent.MOTION_FINISH, loadPrev);
+		}
+
+		// Called when clicking on the next-button
+		function goToNext(e:MouseEvent):void {
+			// Animate the full image away
+			var tween:Tween = new Tween (fullLoader, "x", Back.easeIn, fullLoader.x,
+				fullLoader.x - stage.stageWidth, tweenDuration, true);
+			tween.addEventListener(TweenEvent.MOTION_FINISH, loadNext);
+		}
+
+		// Called when clicking on the previous-button
+		function goToPrev(e:MouseEvent):void {
+			// Animate the full image away
+			var tween:Tween = new Tween (fullLoader, "x", Back.easeIn, fullLoader.x,
+				fullLoader.x + stage.stageWidth, tweenDuration, true);
+			tween.addEventListener(TweenEvent.MOTION_FINISH, loadPrev);
 		}
 
 		// Tweens the full image away to the top, removes the buttons from the stage.
 		function removeFull(e:MouseEvent):void {
-			// Debugging: Call this only after the grid is loaded
-			thumbContainer.addEventListener(MouseEvent.CLICK, callFull);
-			var tween:Tween = new Tween(fullLoader, "y", Back.easeIn,
-					fullLoader.y, fullLoader.y - stage.stageHeight, tweenDuration, true);
-			// Before the animating away starts, remove the buttons
+			var tween:Tween = new Tween (fullLoader, "y", Back.easeIn, fullLoader.y,
+					fullLoader.y - stage.stageHeight, tweenDuration, true);
+			// Assign the animating away starts, remove the buttons
 			functionPassParamsToEvent = showHideButtons(false);
 			tween.addEventListener(TweenEvent.MOTION_START, functionPassParamsToEvent);
 			// Need this to call the tween event in the previous line
@@ -206,11 +241,12 @@
 
 			return function(e:TweenEvent):void {
 				if (showButtons) {
-					// Check if the buttons are on the stage. If not, add them.
+					// Check if the buttons are on the stage. If not, add them and their event listeners.
 					if (!nextBtn.stage) {
 						addChild(nextBtn);
 						nextBtn.x = stage.stageWidth - nextBtn.width;
 						nextBtn.y = stage.stageHeight - nextBtn.height;
+						nextBtn.addEventListener(MouseEvent.CLICK, goToNext);
 					}
 					if (!menuBtn.stage) {
 						addChild(menuBtn);
@@ -222,11 +258,13 @@
 						addChild(prevBtn);
 						prevBtn.x = menuBtn.x - prevBtn.width;
 						prevBtn.y = nextBtn.y;
+						prevBtn.addEventListener(MouseEvent.CLICK, goToPrev);
 					}
 				} else {
-					// Check if the buttons are on the stage. If so, remove them.
+					// Check if the buttons are on the stage. If so, remove them and their event listeners.
 					if (nextBtn.stage) {
 						removeChild(nextBtn);
+						nextBtn.removeEventListener(MouseEvent.CLICK, goToNext);
 					}
 					if (menuBtn.stage) {
 						menuBtn.removeEventListener(MouseEvent.CLICK, removeFull);
@@ -234,6 +272,7 @@
 					}
 					if (prevBtn.stage){
 						removeChild(prevBtn);
+						prevBtn.removeEventListener(MouseEvent.CLICK, goToPrev);
 					}
 				}
 				// Remove event listeners
@@ -247,50 +286,63 @@
 		// Once the full image is tweened away it can be unloaded and removed from the stage.
 		// The thumb grid is then animated in.
 		function fullImgAnimatedAway(e:TweenEvent):void {
-			// Get the loader that was animated by getting the event's current target (the tween)
-			// and its reference to the object that is being tweened (the loader)
-			var loader:Loader = Loader (e.currentTarget.obj);
-			// Unload the loader and remove it from the stage
-			loader.unload();
-			this.removeChild(loader);
+			// Unload the full image and remove the loader from the stage
+			fullLoader.unload();
+			removeChild(fullLoader);
 			// Remove the event listener
 			e.currentTarget.removeEventListener(TweenEvent.MOTION_FINISH, fullImgAnimatedAway);
 			// Call the animation of the grid.
 			animateGridIn();
 		}
 
-		// This function is built this way so that it can get extra parameters as an event listener
-		function lastThumbAnimatedAway(loader:Loader):Function {
+		// Called once the last thumb in the grid is animated in. Makes all the thumbs responsive to clicks.
+		function makeGridActive(e:TweenEvent):void {
+			thumbContainer.addEventListener(MouseEvent.CLICK, callFull);
+			e.currentTarget.removeEventListener(TweenEvent.MOTION_FINISH, makeGridActive);
+		}
 
-			return function(e:TweenEvent):void {
-				// Set loader to visible
-				loader.visible = true;
-				var tween:Tween = new Tween (loader, "y", Back.easeOut,
-					loader.y - stage.stageHeight, loader.y, tweenDuration, true);
-				// After the animating in is done, add the buttons
-				functionPassParamsToEvent = showHideButtons(true);
-				tween.addEventListener(TweenEvent.MOTION_FINISH, functionPassParamsToEvent);
-				// Remove the event listener
-				e.currentTarget.removeEventListener(TweenEvent.MOTION_FINISH, functionPassParamsToEvent);
-			};
+		// Called once last thumb in grid is animated away. Moves in the full image from the top.
+		function animateFullInAfterGrid(e:TweenEvent):void {
+			// Check if the full image is already added to stage (it shouldn't be) and add it if necessary
+			if (!fullLoader.stage)
+				addChild(fullLoader);
+			// Animate it in place
+			var tween:Tween = new Tween (fullLoader, "y", Back.easeOut,
+				fullLoader.y - stage.stageHeight, fullLoader.y, tweenDuration, true);
+			// After the animating in is done, add the buttons
+			functionPassParamsToEvent = showHideButtons(true);
+			tween.addEventListener(TweenEvent.MOTION_FINISH, functionPassParamsToEvent);
+			// Remove the event listener
+			e.currentTarget.removeEventListener(TweenEvent.MOTION_FINISH, animateFullInAfterGrid);
 		}
 
 		// Main animating function. Animates one object. Call with setTimeout.
 		//
+		// arguments[0] to arguments[6] are the parameters passed in when creating a tween.
+		// See the AS3 docs for the Tween class for more info.
+		//
+		// arguments[0]: The object to be tweened
+		// arguments[1]: The property to be tweened
+		// arguments[2]: The type of easing function used
+		// arguments[3]: The starting value of the property to be tweened
+		// arguments[4]: The final value of the property to be tweened
+		// arguments[5]: The duration of the tween
+		// arguments[6]: Boolean specifying to use seconds instead of frames
+		// arguments[7]: Optional. Function to be called once tween is done.
 		function animateTween():void {
 			// If any objects were invisible, now they can be made visible again.
 			arguments[0].visible = true;
 			var tween = new Tween (arguments[0], arguments[1], arguments[2], arguments[3], arguments[4],
 				arguments[5], arguments[6]);
 			// If a functionPassParamsToEvent was passed, call it once the tween is done
-			if (arguments[7] != null) {
+			if (arguments[7]) {
 				// Add image listener so we can wait for the last thumb to animate away
 				tween.addEventListener(TweenEvent.MOTION_FINISH, arguments[7]);
 			}
 		}
 
 		// Tweens the thumbs away to the bottom and tweens the full image in form the top
-		function animateGridOut(loader:Loader):void {
+		function animateGridOut():void {
 			// Shuffle the array so that the thumbs are animated in in a random order
 			var tempArray = shuffleArray(thumbArray);
 			// Reset the delay
@@ -303,10 +355,8 @@
 						tempArray[i].y, stage.stageHeight, tweenDuration, true);
 				} else {
 					// If the last tween is being called, animate in the full image afterwards
-					functionPassParamsToEvent = lastThumbAnimatedAway(loader);
-					setTimeout (animateTween, delay, tempArray[i], "y", Back.easeIn,
-						tempArray[i].y, stage.stageHeight, tweenDuration, true,
-						functionPassParamsToEvent);
+					setTimeout (animateTween, delay, tempArray[i], "y", Back.easeIn, tempArray[i].y,
+						stage.stageHeight, tweenDuration, true, animateFullInAfterGrid);
 				}
 				// Increment that set amount of time for the next thumb in the array
 				delay += delayIncrement;
@@ -337,14 +387,35 @@
 			delay = 0;
 			// Call the animations for all the thumbs
 			for (i = 0; i < n; i++) {
-				// Start the animation after a set amount of time
-				setTimeout (animateTween, delay, tempArray[i], "y", Back.easeOut,
-					stage.stageHeight, tempArray[i].y, tweenDuration, true);
+				if (i + 1 != n) {
+					// Start the animation after a set amount of time
+					setTimeout (animateTween, delay, tempArray[i], "y", Back.easeOut,
+						stage.stageHeight, tempArray[i].y, tweenDuration, true);
+				} else {
+					setTimeout (animateTween, delay, tempArray[i], "y", Back.easeOut,
+						stage.stageHeight, tempArray[i].y, tweenDuration, true, makeGridActive);
+				}
 				// Increment that set amount of time for the next thumb in the array
 				delay += delayIncrement;
 				// Make the thumbs invisible because they are already in their final position
 				tempArray[i].visible = false;
 			}
+		}
+
+		// Returns a new randomized array based on the array passed in.
+		function shuffleArray(pArray:Array):Array {
+			// Make a copy of the original array;
+			var startArray:Array = pArray.concat();
+			var resultArray:Array = new Array();
+
+			var randPos:int;
+			for (var i:int = 0, n:int = startArray.length; i < n; i++) {
+				// Get a random index from the startArray
+				randPos = int(Math.random() * startArray.length);
+				// Remove the element at that index and it to the end of the new array
+				resultArray.push(startArray.splice(randPos, 1)[0]);
+			}
+			return resultArray;
 		}
 	}
 }
