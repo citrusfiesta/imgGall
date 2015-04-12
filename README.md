@@ -1,4 +1,4 @@
-# Interactive image gallery in AS3.
+# Interactive image gallery in AS3
 
 An interactive image gallery with a grid based overview of thumbnail. Clicking on a thumbnail loads in the full image linked to it.
 
