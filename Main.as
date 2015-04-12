@@ -11,6 +11,7 @@
 	import fl.transitions.easing.*;
 	import fl.transitions.TweenEvent;
 	import flash.utils.*;
+	import flash.display.StageDisplayState;
 
 	public class Main extends MovieClip {
 		// Global reference to all the thumbnails
@@ -68,6 +69,9 @@
 		var functionPassParamsToEvent:Function;
 
 		public function Main() {
+			// Set to full screen
+			stage.displayState = StageDisplayState.FULL_SCREEN;
+
 			xmlLoader = new URLLoader();
 			xmlLoader.load(new URLRequest("gallery.xml"));
 			xmlLoader.addEventListener(Event.COMPLETE, processXML);
