@@ -61,6 +61,8 @@
 		var nextBtn:Loader;
 		// Global reference to the menu button
 		var menuBtn:Loader;
+		// Global reference to the language switch button
+		var langBtn:Loader;
 
 		// Used to pass paramaters to an event listener
 		var functionPassParamsToEvent:Function;
@@ -88,6 +90,9 @@
 
 			menuBtn = new Loader();
 			menuBtn.load(new URLRequest(loadedXML.MENU.@LOCATION));
+
+			langBtn = new Loader();
+			langBtn.load(new URLRequest(loadedXML.LANG.@LOCATION));
 
 			// Remove the event listener
 			btnLoader.removeEventListener(Event.COMPLETE, processNav);
@@ -223,8 +228,23 @@
 			tween.addEventListener(TweenEvent.MOTION_FINISH, loadPrev);
 		}
 
-		// Tweens the full image away to the top, removes the buttons from the stage.
+		// Called when clicking the menu button. Tweens the full image away to the top,
+		// removes the buttons from the stage.
 		function removeFull(e:MouseEvent):void {
+			animateFullOut(true);
+		}
+
+		// Called when clicking the language button. Tweens full image away and loads in other language version
+		function changeLanguage(e:MouseEvent):void {
+			// Flip language boolean
+			nl = !nl;
+			animateFullOut(false);
+		}
+
+		// Tweens the full image to above the stage.
+		//
+		// toMenu: True: grid is loaded in. False: image reloaded, in new lang when called by changeLanguage().
+		function animateFullOut(toMenu:Boolean):void {
 			var tween:Tween = new Tween (fullLoader, "y", Back.easeIn, fullLoader.y,
 					fullLoader.y - stage.stageHeight, tweenDuration, true);
 			// Assign the animating away starts, remove the buttons
@@ -233,10 +253,15 @@
 			// Need this to call the tween event in the previous line
 			tween.start();
 			// Once the tween is complete, continue with the rest of the animation
-			tween.addEventListener(TweenEvent.MOTION_FINISH, fullImgAnimatedAway);
+			if (toMenu)// Go to grid
+				tween.addEventListener(TweenEvent.MOTION_FINISH, fullImgAnimatedAway);
+			else// Reload image (in new language when called from changeLanguage())
+				tween.addEventListener(TweenEvent.MOTION_FINISH, animateFullIn);
 		}
 
 		// Shows or hides the buttons based on provided paramater.
+		// This weird setup (with the return type of Function) is so
+		// that arguments can be passed when using event listeners.
 		function showHideButtons(showButtons:Boolean):Function {
 
 			return function(e:TweenEvent):void {
@@ -260,6 +285,12 @@
 						prevBtn.y = nextBtn.y;
 						prevBtn.addEventListener(MouseEvent.CLICK, goToPrev);
 					}
+					if (!langBtn.stage) {
+						addChild(langBtn);
+						langBtn.x = 0;
+						langBtn.y = stage.stageHeight / 2 - langBtn.height / 2;
+						langBtn.addEventListener(MouseEvent.CLICK, changeLanguage);
+					}
 				} else {
 					// Check if the buttons are on the stage. If so, remove them and their event listeners.
 					if (nextBtn.stage) {
@@ -270,9 +301,13 @@
 						menuBtn.removeEventListener(MouseEvent.CLICK, removeFull);
 						removeChild(menuBtn);
 					}
-					if (prevBtn.stage){
+					if (prevBtn.stage) {
 						removeChild(prevBtn);
 						prevBtn.removeEventListener(MouseEvent.CLICK, goToPrev);
+					}
+					if (langBtn.stage) {
+						removeChild(langBtn);
+						langBtn.removeEventListener(MouseEvent.CLICK, changeLanguage);
 					}
 				}
 				// Remove event listeners
@@ -302,7 +337,8 @@
 		}
 
 		// Called once last thumb in grid is animated away. Moves in the full image from the top.
-		function animateFullInAfterGrid(e:TweenEvent):void {
+		function animateFullIn(e:TweenEvent):void {
+			loadFull();
 			// Check if the full image is already added to stage (it shouldn't be) and add it if necessary
 			if (!fullLoader.stage)
 				addChild(fullLoader);
@@ -313,7 +349,7 @@
 			functionPassParamsToEvent = showHideButtons(true);
 			tween.addEventListener(TweenEvent.MOTION_FINISH, functionPassParamsToEvent);
 			// Remove the event listener
-			e.currentTarget.removeEventListener(TweenEvent.MOTION_FINISH, animateFullInAfterGrid);
+			e.currentTarget.removeEventListener(TweenEvent.MOTION_FINISH, animateFullIn);
 		}
 
 		// Main animating function. Animates one object. Call with setTimeout.
@@ -356,7 +392,7 @@
 				} else {
 					// If the last tween is being called, animate in the full image afterwards
 					setTimeout (animateTween, delay, tempArray[i], "y", Back.easeIn, tempArray[i].y,
-						stage.stageHeight, tweenDuration, true, animateFullInAfterGrid);
+						stage.stageHeight, tweenDuration, true, animateFullIn);
 				}
 				// Increment that set amount of time for the next thumb in the array
 				delay += delayIncrement;
