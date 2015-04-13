@@ -269,8 +269,14 @@
 			tween.start();
 			*/
 			// Once the tween is complete, continue with the rest of the animation
-			if (toMenu)// Go to grid
+			if (toMenu) {// Go to grid
 				tween.addEventListener(TweenEvent.MOTION_FINISH, fullImgAnimatedAway);
+				// Assign the animating away starts, remove the buttons
+				functionPassParamsToEvent = showHideButtons(false);
+				tween.addEventListener(TweenEvent.MOTION_START, functionPassParamsToEvent);
+				// Need this to call the tween event in the previous line
+				tween.start();//temp. Once tweens are fixed, normal loading of the buttons can be restored
+			}
 			else// Reload image (in new language when called from changeLanguage())
 				tween.addEventListener(TweenEvent.MOTION_FINISH, animateFullIn);
 		}
