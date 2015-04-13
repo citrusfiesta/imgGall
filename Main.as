@@ -98,6 +98,10 @@
 			langBtn = new Loader();
 			langBtn.load(new URLRequest(loadedXML.LANG.@LOCATION));
 
+			var loader = new Loader();
+			loader.load(new URLRequest(loadedXML.BG.@LOCATION));
+			loader.contentLoaderInfo.addEventListener(Event.INIT, bgLoaded);
+
 			// Remove the event listener
 			btnLoader.removeEventListener(Event.COMPLETE, processNav);
 		}
@@ -117,11 +121,25 @@
 			thumbHeight = loadedXML.@HEIGHT;
 			xmlImgList = loadedXML.IMAGE;
 
+			loadBg(loadedXML);
 			createContainer();
 			loadThumbs();
 
 			// Removing event listener after its purpose is served
 			xmlLoader.removeEventListener(Event.COMPLETE, processXML);
+		}
+
+		function loadBg(loadedXML:XML):void {
+			var loader:Loader = new Loader();
+			loader.load(new URLRequest(loadedXML.BG.@LOCATION));
+			loader.contentLoaderInfo.addEventListener(Event.INIT, bgLoaded);
+			//addChild(loader);
+		}
+
+		function bgLoaded(e:Event):void {
+			var loader:Loader = Loader(e.target.loader);
+			addChildAt(loader, 0);
+			loader.contentLoaderInfo.removeEventListener(Event.INIT, bgLoaded);
 		}
 
 		// Create the movie clip container that holds the thumbs
@@ -251,11 +269,13 @@
 		function animateFullOut(toMenu:Boolean):void {
 			var tween:Tween = new Tween (fullLoader, "y", Back.easeIn, fullLoader.y,
 					fullLoader.y - stage.stageHeight, tweenDuration, true);
+			/*
 			// Assign the animating away starts, remove the buttons
 			functionPassParamsToEvent = showHideButtons(false);
 			tween.addEventListener(TweenEvent.MOTION_START, functionPassParamsToEvent);
 			// Need this to call the tween event in the previous line
 			tween.start();
+			*/
 			// Once the tween is complete, continue with the rest of the animation
 			if (toMenu)// Go to grid
 				tween.addEventListener(TweenEvent.MOTION_FINISH, fullImgAnimatedAway);
@@ -292,7 +312,7 @@
 					if (!langBtn.stage) {
 						addChild(langBtn);
 						langBtn.x = 0;
-						langBtn.y = stage.stageHeight / 2 - langBtn.height / 2;
+						langBtn.y = 0;
 						langBtn.addEventListener(MouseEvent.CLICK, changeLanguage);
 					}
 				} else {
