@@ -121,7 +121,6 @@
 			thumbHeight = loadedXML.@HEIGHT;
 			xmlImgList = loadedXML.IMAGE;
 
-			loadBg(loadedXML);
 			createContainer();
 			loadThumbs();
 
@@ -129,17 +128,10 @@
 			xmlLoader.removeEventListener(Event.COMPLETE, processXML);
 		}
 
-		function loadBg(loadedXML:XML):void {
-			var loader:Loader = new Loader();
-			loader.load(new URLRequest(loadedXML.BG.@LOCATION));
-			loader.contentLoaderInfo.addEventListener(Event.INIT, bgLoaded);
-			//addChild(loader);
-		}
-
 		function bgLoaded(e:Event):void {
 			var loader:Loader = Loader(e.target.loader);
 			addChildAt(loader, 0);
-			loader.contentLoaderInfo.removeEventListener(Event.INIT, bgLoaded);
+			loader.contentLoaderInfo.removeEventListener(Event.COMPLETE, bgLoaded);
 		}
 
 		// Create the movie clip container that holds the thumbs
