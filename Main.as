@@ -65,6 +65,9 @@
 		// Global reference to the language switch button
 		var langBtn:Loader;
 
+		// Holds the tweens so that they don't get garbage collected
+		var tweenList:Vector.<Tween> = new Vector.<Tween>;
+
 		// Used to pass paramaters to an event listener
 		var functionPassParamsToEvent:Function;
 
@@ -211,6 +214,7 @@
 			// Start animating it in
 			var tween:Tween = new Tween (fullLoader, "x", Back.easeOut,
 				fullLoader.x + stage.stageWidth, fullLoader.x, tweenDuration, true);
+			addToTweenList(tween);
 			e.currentTarget.removeEventListener(TweenEvent.MOTION_FINISH, loadNext);
 		}
 
@@ -223,6 +227,7 @@
 			// Start animating it in
 			var tween:Tween = new Tween (fullLoader, "x", Back.easeOut,
 				fullLoader.x - stage.stageWidth, fullLoader.x, tweenDuration, true);
+			addToTweenList(tween);
 			e.currentTarget.removeEventListener(TweenEvent.MOTION_FINISH, loadPrev);
 		}
 
@@ -231,6 +236,7 @@
 			// Animate the full image away
 			var tween:Tween = new Tween (fullLoader, "x", Back.easeIn, fullLoader.x,
 				fullLoader.x - stage.stageWidth, tweenDuration, true);
+			addToTweenList(tween);
 			tween.addEventListener(TweenEvent.MOTION_FINISH, loadNext);
 		}
 
@@ -239,6 +245,7 @@
 			// Animate the full image away
 			var tween:Tween = new Tween (fullLoader, "x", Back.easeIn, fullLoader.x,
 				fullLoader.x + stage.stageWidth, tweenDuration, true);
+			addToTweenList(tween);
 			tween.addEventListener(TweenEvent.MOTION_FINISH, loadPrev);
 		}
 
@@ -255,30 +262,19 @@
 			animateFullOut(false);
 		}
 
-		// Tweens the full image to above the stage.
-		//
-		// toMenu: True: grid is loaded in. False: image reloaded, in new lang when called by changeLanguage().
-		function animateFullOut(toMenu:Boolean):void {
-			var tween:Tween = new Tween (fullLoader, "y", Back.easeIn, fullLoader.y,
-					fullLoader.y - stage.stageHeight, tweenDuration, true);
-			/*
-			// Assign the animating away starts, remove the buttons
-			functionPassParamsToEvent = showHideButtons(false);
-			tween.addEventListener(TweenEvent.MOTION_START, functionPassParamsToEvent);
-			// Need this to call the tween event in the previous line
-			tween.start();
-			*/
-			// Once the tween is complete, continue with the rest of the animation
-			if (toMenu) {// Go to grid
-				tween.addEventListener(TweenEvent.MOTION_FINISH, fullImgAnimatedAway);
-				// Assign the animating away starts, remove the buttons
-				functionPassParamsToEvent = showHideButtons(false);
-				tween.addEventListener(TweenEvent.MOTION_START, functionPassParamsToEvent);
-				// Need this to call the tween event in the previous line
-				tween.start();//temp. Once tweens are fixed, normal loading of the buttons can be restored
-			}
-			else// Reload image (in new language when called from changeLanguage())
-				tween.addEventListener(TweenEvent.MOTION_FINISH, animateFullIn);
+		// Adds tween to tweenList. Prevents it from being garbage collected prematurely
+		function addToTweenList(tween:Tween):void {
+			tweenList.push(tween);
+			tween.addEventListener(TweenEvent.MOTION_FINISH, removeTweenFromList);
+		}
+
+		// Removes the supplied tween from tweenList
+		function removeTweenFromList(e:TweenEvent):void {
+			// Remove event listener
+			e.currentTarget.removeEventListener(TweenEvent.MOTION_FINISH, removeTweenFromList);
+			// Find tween in list and remove it from the list
+			var tweenIndex:int = tweenList.indexOf(e.currentTarget);
+			tweenList.splice(tweenIndex, 1);
 		}
 
 		// Shows or hides the buttons based on provided paramater.
@@ -291,7 +287,7 @@
 					// Check if the buttons are on the stage. If not, add them and their event listeners.
 					if (!nextBtn.stage) {
 						addChild(nextBtn);
-						nextBtn.x = stage.stageWidth - nextBtn.width;
+						nextBtn.x = stage.stageWidth - nextBtn.width - 27;
 						nextBtn.y = stage.stageHeight - nextBtn.height;
 						nextBtn.addEventListener(MouseEvent.CLICK, goToNext);
 					}
@@ -340,6 +336,12 @@
 			};
 		}
 
+		// Called once the last thumb in the grid is animated in. Makes all the thumbs responsive to clicks.
+		function makeGridActive(e:TweenEvent):void {
+			thumbContainer.addEventListener(MouseEvent.CLICK, callFull);
+			e.currentTarget.removeEventListener(TweenEvent.MOTION_FINISH, makeGridActive);
+		}
+
 		// Once the full image is tweened away it can be unloaded and removed from the stage.
 		// The thumb grid is then animated in.
 		function fullImgAnimatedAway(e:TweenEvent):void {
@@ -352,10 +354,23 @@
 			animateGridIn();
 		}
 
-		// Called once the last thumb in the grid is animated in. Makes all the thumbs responsive to clicks.
-		function makeGridActive(e:TweenEvent):void {
-			thumbContainer.addEventListener(MouseEvent.CLICK, callFull);
-			e.currentTarget.removeEventListener(TweenEvent.MOTION_FINISH, makeGridActive);
+		// Tweens the full image to above the stage.
+		//
+		// toMenu: True: grid is loaded in. False: image reloaded, in new lang when called by changeLanguage().
+		function animateFullOut(toMenu:Boolean):void {
+			var tween:Tween = new Tween (fullLoader, "y", Back.easeIn, fullLoader.y,
+					fullLoader.y - stage.stageHeight, tweenDuration, true);
+			addToTweenList(tween);
+			// Assign the animating away starts, remove the buttons
+			functionPassParamsToEvent = showHideButtons(false);
+			tween.addEventListener(TweenEvent.MOTION_START, functionPassParamsToEvent);
+			// Need this to call the tween event in the previous line
+			tween.start();
+			// Once the tween is complete, continue with the rest of the animation
+			if (toMenu)// Go to grid
+				tween.addEventListener(TweenEvent.MOTION_FINISH, fullImgAnimatedAway);
+			else// Reload image (in new language when called from changeLanguage())
+				tween.addEventListener(TweenEvent.MOTION_FINISH, animateFullIn);
 		}
 
 		// Called once last thumb in grid is animated away. Moves in the full image from the top.
@@ -367,6 +382,7 @@
 			// Animate it in place
 			var tween:Tween = new Tween (fullLoader, "y", Back.easeOut,
 				fullLoader.y - stage.stageHeight, fullLoader.y, tweenDuration, true);
+			addToTweenList(tween);
 			// After the animating in is done, add the buttons
 			functionPassParamsToEvent = showHideButtons(true);
 			tween.addEventListener(TweenEvent.MOTION_FINISH, functionPassParamsToEvent);
@@ -392,6 +408,7 @@
 			arguments[0].visible = true;
 			var tween = new Tween (arguments[0], arguments[1], arguments[2], arguments[3], arguments[4],
 				arguments[5], arguments[6]);
+			addToTweenList(tween);
 			// If a functionPassParamsToEvent was passed, call it once the tween is done
 			if (arguments[7]) {
 				// Add image listener so we can wait for the last thumb to animate away
