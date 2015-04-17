@@ -12,6 +12,7 @@
 	import fl.transitions.TweenEvent;
 	import flash.utils.*;
 	import flash.display.StageDisplayState;
+	import flash.ui.Mouse;
 
 	public class Main extends MovieClip {
 		// Global reference to all the thumbnails
@@ -72,6 +73,9 @@
 		var functionPassParamsToEvent:Function;
 
 		public function Main() {
+
+			Mouse.hide();
+
 			// Set to full screen
 			stage.displayState = StageDisplayState.FULL_SCREEN;
 
