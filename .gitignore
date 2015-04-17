@@ -1,3 +1,5 @@
 .DS_Store
 /images/*
 *.swf
+*.app
+*.exe
