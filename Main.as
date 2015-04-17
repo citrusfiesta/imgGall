@@ -74,10 +74,8 @@
 
 		public function Main() {
 
-			Mouse.hide();
-
-			// Set to full screen
-			stage.displayState = StageDisplayState.FULL_SCREEN;
+			// Need to call it after a timeout to make hiding the mouse work
+			setTimeout (goFullScreenAndHideMouse, 1000);
 
 			xmlLoader = new URLLoader();
 			xmlLoader.load(new URLRequest("gallery.xml"));
@@ -86,6 +84,13 @@
 			btnLoader = new URLLoader();
 			btnLoader.load(new URLRequest("buttons.xml"));
 			btnLoader.addEventListener(Event.COMPLETE, processNav);
+		}
+
+		// To work around a bug in Flash, this needs to be called after a short delay
+		function goFullScreenAndHideMouse() {
+			// Set to full screen
+			stage.displayState = StageDisplayState.FULL_SCREEN;
+			Mouse.hide();
 		}
 
 		// Loading in the buttons
